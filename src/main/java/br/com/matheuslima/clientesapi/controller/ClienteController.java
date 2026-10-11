@@ -32,7 +32,7 @@ public class ClienteController implements ClienteApi {
     @PostMapping
     public ResponseEntity<ClienteResponse> criar(@Valid @RequestBody ClienteRequest request) {
         var criado = service.criar(request);
-        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+        var location = ServletUriComponentsBuilder.fromCurrentRequestUri()
                 .path("/{id}")
                 .buildAndExpand(criado.id())
                 .toUri();
