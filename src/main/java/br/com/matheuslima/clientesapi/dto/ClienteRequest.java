@@ -14,7 +14,7 @@ public record ClienteRequest(
         String nome,
 
         @Schema(description = "E-mail de contato", example = "maria@email.com")
-        @NotBlank @Email
+        @NotBlank @Email(regexp = ".+@.+\\..+")
         @Size(max = 255, message = "deve ter no máximo 255 caracteres")
         String email,
 
@@ -24,4 +24,9 @@ public record ClienteRequest(
         @CPF
         String cpf
 ) {
+
+    public ClienteRequest {
+        nome = nome == null ? null : nome.strip().replaceAll("\\s+", " ");
+        email = email == null ? null : email.strip();
+    }
 }

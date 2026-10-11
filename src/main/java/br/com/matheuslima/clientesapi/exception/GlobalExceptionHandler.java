@@ -16,8 +16,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -43,18 +46,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   HttpHeaders headers,
                                                                   HttpStatusCode status,
                                                                   WebRequest request) {
-        Map<String, String> erros = ex.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.toMap(
+        Map<String, List<String>> erros = ex.getBindingResult().getFieldErrors().stream()
+                .sorted(Comparator.comparing(this::mensagemDe))
+                .collect(Collectors.groupingBy(
                         FieldError::getField,
-                        erro -> erro.isBindingFailure()
-                                ? "valor em formato inválido"
-                                : Objects.requireNonNullElse(erro.getDefaultMessage(), "valor inválido"),
-                        (primeiro, segundo) -> primeiro));
+                        TreeMap::new,
+                        Collectors.mapping(this::mensagemDe, Collectors.toList())));
 
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Um ou mais campos são inválidos");
         problem.setTitle("Dados inválidos");
         problem.setProperty("erros", erros);
         return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    private String mensagemDe(FieldError erro) {
+        if (erro.isBindingFailure()) {
+            return "valor em formato inválido";
+        }
+        return Objects.requireNonNullElse(erro.getDefaultMessage(), "valor inválido");
     }
 
     // segurança contra race condition duas requisições simultâneas podem passar

@@ -30,9 +30,12 @@ public interface ClienteApi {
               "detail": "Um ou mais campos são inválidos",
               "instance": "/api/v1/clientes",
               "erros": {
-                "nome": "tamanho deve ser entre 3 e 100",
-                "email": "deve ser um endereço de e-mail bem formado",
-                "cpf": "deve conter exatamente 11 dígitos numéricos"
+                "cpf": [
+                  "deve conter exatamente 11 dígitos numéricos",
+                  "número do registro de contribuinte individual brasileiro (CPF) inválido"
+                ],
+                "email": ["deve ser um endereço de e-mail bem formado"],
+                "nome": ["tamanho deve ser entre 3 e 100"]
               }
             }
             """;
@@ -55,7 +58,7 @@ public interface ClienteApi {
               "detail": "Um ou mais campos são inválidos",
               "instance": "/api/v1/clientes",
               "erros": {
-                "tamanho": "deve ser menor que ou igual à 50"
+                "tamanho": ["deve ser menor que ou igual à 50"]
               }
             }
             """;
