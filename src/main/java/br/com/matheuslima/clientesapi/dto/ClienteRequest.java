@@ -26,7 +26,13 @@ public record ClienteRequest(
 ) {
 
     public ClienteRequest {
-        nome = nome == null ? null : nome.strip().replaceAll("\\s+", " ");
+        nome = nome == null ? null : normalizarEspacos(nome);
         email = email == null ? null : email.strip();
+    }
+
+    private static String normalizarEspacos(String texto) {
+        return texto.replaceAll("\\p{Cf}", "")
+                .replaceAll("[\\s\\p{Z}]+", " ")
+                .strip();
     }
 }
