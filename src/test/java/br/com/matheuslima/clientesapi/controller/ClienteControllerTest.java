@@ -200,6 +200,19 @@ class ClienteControllerTest {
     }
 
     @Test
+    @DisplayName("mensagens de validação devem ser em português independente do idioma da requisição")
+    void deveRetornarMensagensEmPortugues() throws Exception {
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Accept-Language", "en-US")
+                        .content("""
+                            {"nome": "Ma", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.nome[0]").value("tamanho deve ser entre 3 e 100"));
+    }
+
+    @Test
     @DisplayName("POST com e-mail sem domínio completo deve retornar 400")
     void deveRejeitarEmailSemDominioCompleto() throws Exception {
         mockMvc.perform(post("/api/v1/clientes")
