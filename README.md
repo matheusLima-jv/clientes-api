@@ -277,6 +277,8 @@ O fluxo de uma requisição segue `Controller → Service → Repository`, com t
 
 **Unicidade do CPF em duas camadas.** O service verifica com `existsByCpf` antes de salvar, o que cobre o caso comum com uma resposta clara. Isso sozinho não basta: duas requisições simultâneas podem passar pela verificação ao mesmo tempo. Por isso o banco também tem uma constraint única com nome (`uk_clientes_cpf`). Quando ela é violada, o `GlobalExceptionHandler` identifica a constraint pelo nome e devolve o mesmo `409`. Outras violações de integridade recebem uma resposta genérica de conflito e nunca são confundidas com CPF duplicado.
 
+**Remoção atômica.** O `DELETE` executa um único comando `delete ... where id = :id` e usa o número de linhas afetadas para decidir entre `204` e `404`. Verificar a existência e remover em etapas separadas abriria espaço para que requisições simultâneas de remoção do mesmo cliente terminassem em erro. Com um único comando, uma delas recebe `204` e as demais `404`, e o banco é consultado uma vez só.
+
 **Records como DTOs.** As entradas e saídas são records imutáveis. O construtor compacto do `ClienteRequest` normaliza o nome e o e-mail antes da validação, e o `PaginacaoRequest` concentra os valores padrão e os limites da paginação.
 
 **Envelope de paginação próprio.** A listagem devolve um `PaginaResponse` em vez de serializar o `Page` do Spring Data diretamente. Assim o contrato da API fica estável, com nomes de campos em português, e não depende da estrutura interna do framework.
@@ -286,6 +288,8 @@ O fluxo de uma requisição segue `Controller → Service → Repository`, com t
 **Documentação separada do controller.** As anotações do OpenAPI ficam na interface `ClienteApi`, implementada pelo `ClienteController`. O controller mantém apenas o código dos endpoints, e a documentação inclui exemplos reais de cada resposta de erro.
 
 **Erros inesperados não expõem detalhes.** Exceções não previstas retornam `500` com uma mensagem genérica. A exceção completa é registrada no log, sem vazar informações internas para quem consome a API.
+
+**Mensagens sempre em português.** O idioma da aplicação é fixo em `pt_BR` (`spring.web.locale-resolver: fixed`). Sem isso, as mensagens de validação seguiriam o cabeçalho `Accept-Language` ou o idioma da máquina, e a mesma requisição poderia gerar respostas que misturam português e inglês.
 
 **Outros cuidados.** `spring.jpa.open-in-view` está desativado para que nenhuma consulta ao banco aconteça fora da camada de serviço, e as operações de leitura usam `@Transactional(readOnly = true)`.
 
@@ -299,16 +303,16 @@ O fluxo de uma requisição segue `Controller → Service → Repository`, com t
 mvnw.cmd test
 ```
 
-São 32 testes no total, organizados em quatro níveis:
+São 35 testes no total, organizados em quatro níveis:
 
 | Classe | Tipo | O que cobre | Testes |
 |---|---|---|---|
 | `ClienteServiceTest` | Unitário (JUnit 5 + Mockito) | Regras de negócio: cadastro, CPF duplicado, busca, remoção e listagem, incluindo os cenários de exceção | 7 |
-| `ClienteControllerTest` | Web (`@WebMvcTest` + MockMvc) | Status HTTP, cabeçalho `Location`, validações, paginação, normalização de entrada e formato das respostas de erro | 22 |
-| `ClienteRepositoryTest` | Persistência (`@DataJpaTest`) | Consulta por CPF e constraint de unicidade aplicada pelo banco | 2 |
+| `ClienteControllerTest` | Web (`@WebMvcTest` + MockMvc) | Status HTTP, cabeçalho `Location`, validações, paginação, normalização de entrada, idioma das mensagens e formato das respostas de erro | 24 |
+| `ClienteRepositoryTest` | Persistência (`@DataJpaTest`) | Consulta por CPF, constraint de unicidade aplicada pelo banco e remoção atômica por id | 3 |
 | `ClienteIntegracaoTest` | Integração (`@SpringBootTest`) | Fluxo completo com a aplicação real: cadastro, consulta pelo `Location`, CPF duplicado, listagem, remoção e consulta após a remoção | 1 |
 
-O `ClienteControllerTest` inclui um teste parametrizado com 5 cenários de paginação inválida. Os testes que verificam mensagens de validação usam apenas as mensagens definidas no projeto, para não depender do idioma da máquina que executa o build.
+O `ClienteControllerTest` inclui um teste parametrizado com 5 cenários de paginação inválida. Como o idioma da aplicação é fixo, os testes produzem o mesmo resultado em qualquer máquina, independentemente do idioma configurado no sistema.
 
 ## Atendimento aos requisitos
 
