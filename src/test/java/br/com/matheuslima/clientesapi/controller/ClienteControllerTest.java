@@ -25,6 +25,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -150,6 +152,62 @@ class ClienteControllerTest {
                 .andExpect(jsonPath("$.erros.nome").exists())
                 .andExpect(jsonPath("$.erros.email").exists())
                 .andExpect(jsonPath("$.erros.cpf").exists());
+
+        verify(service, never()).criar(any());
+    }
+
+    @Test
+    @DisplayName("POST deve retornar todas as mensagens de erro de um mesmo campo")
+    void deveRetornarTodasAsMensagensDoCampo() throws Exception {
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria Silva", "email": "maria@email.com", "cpf": "123"}
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.cpf", hasSize(2)))
+                .andExpect(jsonPath("$.erros.cpf", hasItem("deve conter exatamente 11 dígitos numéricos")));
+    }
+
+    @Test
+    @DisplayName("POST deve remover espaços extras do nome antes de validar")
+    void deveNormalizarNome() throws Exception {
+        when(service.criar(any(ClienteRequest.class))).thenReturn(MARIA);
+
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "  Maria   Silva  ", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isCreated());
+
+        verify(service).criar(argThat(request -> request.nome().equals("Maria Silva")));
+    }
+
+    @Test
+    @DisplayName("POST com nome de menos de 3 caracteres desconsiderando espaços deve retornar 400")
+    void deveRejeitarNomeCurtoComEspacos() throws Exception {
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "  a ", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.nome").exists());
+
+        verify(service, never()).criar(any());
+    }
+
+    @Test
+    @DisplayName("POST com e-mail sem domínio completo deve retornar 400")
+    void deveRejeitarEmailSemDominioCompleto() throws Exception {
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria Silva", "email": "maria@localhost", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.email").exists());
 
         verify(service, never()).criar(any());
     }
