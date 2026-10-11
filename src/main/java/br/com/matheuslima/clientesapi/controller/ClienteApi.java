@@ -47,9 +47,9 @@ public interface ClienteApi {
     String EXEMPLO_400_ID = """
             {
               "type": "about:blank",
-              "title": "Bad Request",
+              "title": "Requisição inválida",
               "status": 400,
-              "detail": "Failed to convert 'id' with value: 'abc'",
+              "detail": "Valor 'abc' inválido para o parâmetro 'id'",
               "instance": "/api/v1/clientes/abc"
             }
             """;
