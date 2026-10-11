@@ -1,10 +1,27 @@
 package br.com.matheuslima.clientesapi.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-public record PaginaResponse<T>(List<T> conteudo, int pagina, int tamanho, long totalElementos, int totalPaginas) {
+@Schema(description = "Página de resultados")
+public record PaginaResponse<T>(
+        @Schema(description = "Itens da página atual")
+        List<T> conteudo,
+
+        @Schema(description = "Número da página atual, começando em 0", example = "0")
+        int pagina,
+
+        @Schema(description = "Quantidade máxima de itens por página", example = "10")
+        int tamanho,
+
+        @Schema(description = "Total de itens em todas as páginas", example = "1")
+        long totalElementos,
+
+        @Schema(description = "Total de páginas", example = "1")
+        int totalPaginas
+) {
 
     public static <T> PaginaResponse<T> from(Page<T> page) {
         return new PaginaResponse<>(

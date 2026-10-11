@@ -21,7 +21,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/v1/clientes")
-public class ClienteController {
+public class ClienteController implements ClienteApi {
 
     private final ClienteService service;
 
@@ -29,6 +29,7 @@ public class ClienteController {
         this.service = service;
     }
 
+    @Override
     @PostMapping
     public ResponseEntity<ClienteResponse> criar(@Valid @RequestBody ClienteRequest request) {
         var criado = service.criar(request);
@@ -39,16 +40,19 @@ public class ClienteController {
         return ResponseEntity.created(location).body(criado);
     }
 
+    @Override
     @GetMapping("/{id}")
     public ClienteResponse buscarPorId(@PathVariable Long id) {
         return service.buscarPorId(id);
     }
 
+    @Override
     @GetMapping
     public PaginaResponse<ClienteResponse> listar(@PageableDefault(size = 10, sort = "id") Pageable pageable) {
         return service.listar(pageable);
     }
 
+    @Override
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remover(@PathVariable Long id) {

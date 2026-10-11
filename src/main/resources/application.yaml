@@ -19,3 +19,8 @@ spring:
         page-parameter: pagina
         size-parameter: tamanho
         max-page-size: 50
+
+springdoc:
+  default-produces-media-type: application/json
+  swagger-ui:
+    operations-sorter: method
