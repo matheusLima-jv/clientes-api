@@ -6,12 +6,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "clientes")
+@Table(name = "clientes", uniqueConstraints = @UniqueConstraint(name = Cliente.UK_CPF, columnNames = "cpf"))
 public class Cliente {
+
+    public static final String UK_CPF = "uk_clientes_cpf";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +26,7 @@ public class Cliente {
     @Column(nullable = false)
     private String email;
 
-    @Column(name = "cpf", nullable = false, length = 11, unique = true)
+    @Column(name = "cpf", nullable = false, length = 11)
     private String cpf;
 
     @Column(name = "data_cadastro", nullable = false, updatable = false)

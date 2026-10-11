@@ -1,5 +1,7 @@
 package br.com.matheuslima.clientesapi.exception;
 
+import br.com.matheuslima.clientesapi.domain.Cliente;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -43,7 +45,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> erros = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        // falha de conversão (ex.: pagina=abc) traz mensagem técnica do Spring; não expõe ao cliente
                         erro -> erro.isBindingFailure()
                                 ? "valor em formato inválido"
                                 : Objects.requireNonNullElse(erro.getDefaultMessage(), "valor inválido"),
@@ -59,9 +60,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // pelo existsByCpf ao mesmo tempo; a constraint unique do banco barra a segunda
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleViolacaoDeIntegridade(DataIntegrityViolationException ex) {
-        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "CPF já cadastrado");
-        problem.setTitle("CPF duplicado");
+        if (violouUnicidadeDoCpf(ex)) {
+            return handleCpfDuplicado(new CpfDuplicadoException());
+        }
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "A operação viola uma restrição de integridade dos dados");
+        problem.setTitle("Conflito de dados");
         return problem;
+    }
+
+    private boolean violouUnicidadeDoCpf(DataIntegrityViolationException ex) {
+        return ex.getCause() instanceof ConstraintViolationException violacao
+                && violacao.getConstraintName() != null
+                && violacao.getConstraintName().toLowerCase().contains(Cliente.UK_CPF);
     }
 
 }

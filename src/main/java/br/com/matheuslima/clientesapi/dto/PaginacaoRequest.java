@@ -20,8 +20,6 @@ public record PaginacaoRequest(
 ) {
 
     public static final int TAMANHO_MAXIMO = 50;
-
-    // o banco recebe o offset (pagina * tamanho) como int; acima disso a consulta falha
     public static final int PAGINA_MAXIMA = Integer.MAX_VALUE / TAMANHO_MAXIMO;
 
     public PaginacaoRequest {

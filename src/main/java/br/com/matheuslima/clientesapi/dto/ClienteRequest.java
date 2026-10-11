@@ -15,6 +15,7 @@ public record ClienteRequest(
 
         @Schema(description = "E-mail de contato", example = "maria@email.com")
         @NotBlank @Email
+        @Size(max = 255, message = "deve ter no máximo 255 caracteres")
         String email,
 
         @Schema(description = "CPF válido com 11 dígitos, sem pontuação", example = "52998224725")
