@@ -18,6 +18,10 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 @Tag(name = "Clientes", description = "Cadastro, consulta e remoção de clientes")
+@ApiResponse(responseCode = "500", description = "Erro inesperado",
+        content = @Content(mediaType = ClienteApi.PROBLEM_JSON,
+                schema = @Schema(implementation = ProblemDetail.class),
+                examples = @ExampleObject(value = ClienteApi.EXEMPLO_500)))
 public interface ClienteApi {
 
     String PROBLEM_JSON = "application/problem+json";
@@ -79,6 +83,16 @@ public interface ClienteApi {
               "title": "CPF duplicado",
               "status": 409,
               "detail": "CPF já cadastrado",
+              "instance": "/api/v1/clientes"
+            }
+            """;
+
+    String EXEMPLO_500 = """
+            {
+              "type": "about:blank",
+              "title": "Erro interno",
+              "status": 500,
+              "detail": "Ocorreu um erro inesperado. Tente novamente mais tarde.",
               "instance": "/api/v1/clientes"
             }
             """;

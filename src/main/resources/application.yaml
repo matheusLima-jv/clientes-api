@@ -20,4 +20,4 @@ spring:
 springdoc:
   default-produces-media-type: application/json
   swagger-ui:
-    operations-sorter: method
+    operations-sorter: alpha
