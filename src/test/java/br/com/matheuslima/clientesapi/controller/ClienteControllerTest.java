@@ -67,6 +67,20 @@ class ClienteControllerTest {
     }
 
     @Test
+    @DisplayName("POST não deve repassar a query string da requisição para o Location")
+    void naoDeveRepassarQueryStringParaLocation() throws Exception {
+        when(service.criar(any(ClienteRequest.class))).thenReturn(MARIA);
+
+        mockMvc.perform(post("/api/v1/clientes?origem=teste")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nome": "Maria Silva", "email": "maria@email.com", "cpf": "52998224725"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "http://localhost/api/v1/clientes/1"));
+    }
+
+    @Test
     @DisplayName("GET por id deve retornar 200 com o cliente")
     void deveBuscarPorId() throws Exception {
         when(service.buscarPorId(1L)).thenReturn(MARIA);
