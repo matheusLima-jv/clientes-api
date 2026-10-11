@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -197,6 +198,36 @@ class ClienteControllerTest {
                 .andExpect(status().isCreated());
 
         verify(service).criar(argThat(request -> request.nome().equals("Maria Silva")));
+    }
+
+    @Test
+    @DisplayName("POST deve tratar espaços não separáveis no nome como espaços comuns")
+    void deveNormalizarEspacosNaoSeparaveisNoNome() throws Exception {
+        when(service.criar(any(ClienteRequest.class))).thenReturn(MARIA);
+
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria\\u00a0\\u00a0Silva", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isCreated());
+
+        verify(service).criar(argThat(request -> request.nome().equals("Maria Silva")));
+    }
+
+    @ParameterizedTest(name = "nome = \"{0}\"")
+    @ValueSource(strings = {"\\u00a0\\u00a0\\u00a0", "\\u200b\\u200b\\u200b"})
+    @DisplayName("POST com nome formado apenas por caracteres invisíveis deve retornar 400")
+    void deveRejeitarNomeComCaracteresInvisiveis(String nome) throws Exception {
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "%s", "email": "maria@email.com", "cpf": "52998224725"}
+                            """.formatted(nome)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.nome").exists());
+
+        verify(service, never()).criar(any());
     }
 
     @Test
