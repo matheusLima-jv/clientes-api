@@ -3,9 +3,10 @@ package br.com.matheuslima.clientesapi.service;
 import br.com.matheuslima.clientesapi.domain.Cliente;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
 import br.com.matheuslima.clientesapi.dto.ClienteResponse;
+import br.com.matheuslima.clientesapi.exception.ClienteNaoEncontradoException;
 import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.repository.ClienteRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -31,7 +32,10 @@ public class ClienteService {
         return ClienteResponse.from(repository.save(cliente));
     }
 
+    @Transactional(readOnly = true)
     public ClienteResponse buscarPorId(Long id) {
-        throw new UnsupportedOperationException("não implementado");
+        return repository.findById(id)
+                .map(ClienteResponse::from)
+                .orElseThrow(() -> new ClienteNaoEncontradoException(id));
     }
 }
