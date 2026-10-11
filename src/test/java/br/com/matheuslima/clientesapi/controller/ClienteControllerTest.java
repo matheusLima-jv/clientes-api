@@ -167,6 +167,18 @@ class ClienteControllerTest {
     }
 
     @Test
+    @DisplayName("erro inesperado deve retornar 500 em ProblemDetail sem expor detalhes internos")
+    void deveRetornar500SemExporDetalhes() throws Exception {
+        when(service.buscarPorId(1L)).thenThrow(new IllegalStateException("conexão com o banco recusada"));
+
+        mockMvc.perform(get("/api/v1/clientes/1"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Erro interno"))
+                .andExpect(jsonPath("$.detail").value("Ocorreu um erro inesperado. Tente novamente mais tarde."));
+    }
+
+    @Test
     @DisplayName("POST com CPF duplicado deve retornar 409")
     void deveRetornar409() throws Exception {
         when(service.criar(any(ClienteRequest.class))).thenThrow(new CpfDuplicadoException());
