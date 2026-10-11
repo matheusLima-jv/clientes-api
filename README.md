@@ -163,12 +163,12 @@ HTTP/1.1 204
 
 | Campo | Regras |
 |---|---|
-| `nome` | Obrigatório, entre 3 e 100 caracteres. Espaços no início e no fim são removidos, e espaços repetidos entre as palavras são reduzidos a um, antes da validação. |
+| `nome` | Obrigatório, entre 3 e 100 caracteres. Antes da validação, espaços no início e no fim são removidos, espaços repetidos entre as palavras (inclusive espaços não separáveis) são reduzidos a um e caracteres invisíveis são descartados. |
 | `email` | Obrigatório, formato de e-mail válido com domínio completo (ex.: `nome@dominio.com`), no máximo 255 caracteres. |
 | `cpf` | Obrigatório, exatamente 11 dígitos numéricos (sem pontuação), com dígitos verificadores válidos. Não pode haver dois clientes com o mesmo CPF. |
 | `dataCadastro` | Gerada pelo servidor no momento do cadastro, em UTC (ISO-8601). |
 
-Exemplo: `"  Maria   Silva  "` é armazenado como `"Maria Silva"`, e `"  a "` é rejeitado por ter apenas 1 caractere útil.
+Exemplo: `"  Maria   Silva  "` é armazenado como `"Maria Silva"`, e `"  a "` é rejeitado por ter apenas 1 caractere útil. Um nome formado apenas por caracteres invisíveis também é rejeitado.
 
 ## Paginação
 
@@ -187,13 +187,14 @@ A listagem recebe dois parâmetros opcionais de query string:
 
 ## Tratamento de erros
 
-Todos os erros seguem o padrão Problem Details ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)), com `Content-Type: application/problem+json`. O tratamento é centralizado em um `@RestControllerAdvice` (`GlobalExceptionHandler`).
+Todos os erros seguem o padrão Problem Details ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)), com `Content-Type: application/problem+json`. O tratamento é centralizado em um `@RestControllerAdvice` (`GlobalExceptionHandler`). Títulos e mensagens são sempre em português, inclusive nos erros tratados pelo próprio Spring, como JSON malformado ou método não suportado.
 
 | Status | Quando ocorre |
 |---|---|
 | `400 Bad Request` | Campos inválidos, JSON malformado, id em formato inválido ou parâmetros de paginação fora dos limites |
 | `404 Not Found` | Cliente inexistente ou rota inexistente |
 | `405 Method Not Allowed` | Método HTTP não suportado na rota |
+| `406 Not Acceptable` | Cabeçalho `Accept` pede um formato de resposta diferente de JSON |
 | `409 Conflict` | CPF já cadastrado |
 | `415 Unsupported Media Type` | Corpo enviado sem `Content-Type: application/json` |
 | `500 Internal Server Error` | Erro inesperado. A resposta traz uma mensagem genérica e os detalhes ficam apenas no log da aplicação |
@@ -250,7 +251,7 @@ Os erros de validação trazem a propriedade `erros`, com a lista de mensagens d
 src/main/java/br/com/matheuslima/clientesapi
 ├── config/
 │   ├── ClockConfig.java              # Clock usado para gerar a data de cadastro
-│   └── OpenApiConfig.java            # Informações gerais da documentação OpenAPI
+│   └── OpenApiConfig.java            # Informações gerais e schema de erro da documentação OpenAPI
 ├── controller/
 │   ├── ClienteApi.java               # Contrato da API com as anotações do OpenAPI
 │   └── ClienteController.java        # Endpoints REST
@@ -285,11 +286,11 @@ O fluxo de uma requisição segue `Controller → Service → Repository`, com t
 
 **Datas em UTC.** A `dataCadastro` é um `Instant`, armazenado e devolvido em UTC e truncado em segundos. O valor não depende do fuso horário do servidor, e a resposta do cadastro é idêntica à de uma consulta posterior. O `Clock` é injetado no service, o que torna os testes determinísticos.
 
-**Documentação separada do controller.** As anotações do OpenAPI ficam na interface `ClienteApi`, implementada pelo `ClienteController`. O controller mantém apenas o código dos endpoints, e a documentação inclui exemplos reais de cada resposta de erro.
+**Documentação separada do controller.** As anotações do OpenAPI ficam na interface `ClienteApi`, implementada pelo `ClienteController`. O controller mantém apenas o código dos endpoints, e a documentação inclui exemplos reais de cada resposta de erro. O schema de erro documentado reflete exatamente a resposta da API, incluindo a propriedade `erros`, e os campos sempre presentes nas respostas são marcados como obrigatórios, o que permite gerar clientes tipados a partir do spec.
 
 **Erros inesperados não expõem detalhes.** Exceções não previstas retornam `500` com uma mensagem genérica. A exceção completa é registrada no log, sem vazar informações internas para quem consome a API.
 
-**Mensagens sempre em português.** O idioma da aplicação é fixo em `pt_BR` (`spring.web.locale-resolver: fixed`). Sem isso, as mensagens de validação seguiriam o cabeçalho `Accept-Language` ou o idioma da máquina, e a mesma requisição poderia gerar respostas que misturam português e inglês.
+**Mensagens sempre em português.** O idioma da aplicação é fixo em `pt_BR` (`spring.web.locale-resolver: fixed`). Sem isso, as mensagens de validação seguiriam o cabeçalho `Accept-Language` ou o idioma da máquina, e a mesma requisição poderia gerar respostas que misturam português e inglês. Os erros tratados pelo próprio Spring (JSON malformado, rota inexistente, método ou Content-Type não suportado) são traduzidos no `messages.properties`, pelos códigos de mensagem que o Spring consulta ao montar o Problem Details.
 
 **Outros cuidados.** `spring.jpa.open-in-view` está desativado para que nenhuma consulta ao banco aconteça fora da camada de serviço, e as operações de leitura usam `@Transactional(readOnly = true)`.
 
@@ -303,16 +304,16 @@ O fluxo de uma requisição segue `Controller → Service → Repository`, com t
 mvnw.cmd test
 ```
 
-São 35 testes no total, organizados em quatro níveis:
+São 44 testes no total, organizados em quatro níveis:
 
 | Classe | Tipo | O que cobre | Testes |
 |---|---|---|---|
 | `ClienteServiceTest` | Unitário (JUnit 5 + Mockito) | Regras de negócio: cadastro, CPF duplicado, busca, remoção e listagem, incluindo os cenários de exceção | 7 |
-| `ClienteControllerTest` | Web (`@WebMvcTest` + MockMvc) | Status HTTP, cabeçalho `Location`, validações, paginação, normalização de entrada, idioma das mensagens e formato das respostas de erro | 24 |
+| `ClienteControllerTest` | Web (`@WebMvcTest` + MockMvc) | Status HTTP, cabeçalho `Location`, validações, paginação, normalização de entrada, idioma das mensagens e formato das respostas de erro, inclusive dos erros tratados pelo Spring | 33 |
 | `ClienteRepositoryTest` | Persistência (`@DataJpaTest`) | Consulta por CPF, constraint de unicidade aplicada pelo banco e remoção atômica por id | 3 |
 | `ClienteIntegracaoTest` | Integração (`@SpringBootTest`) | Fluxo completo com a aplicação real: cadastro, consulta pelo `Location`, CPF duplicado, listagem, remoção e consulta após a remoção | 1 |
 
-O `ClienteControllerTest` inclui um teste parametrizado com 5 cenários de paginação inválida. Como o idioma da aplicação é fixo, os testes produzem o mesmo resultado em qualquer máquina, independentemente do idioma configurado no sistema.
+O `ClienteControllerTest` inclui testes parametrizados para paginação inválida (5 cenários), nomes formados por caracteres invisíveis (2) e erros tratados pelo Spring (5). Como o idioma da aplicação é fixo, os testes produzem o mesmo resultado em qualquer máquina, independentemente do idioma configurado no sistema.
 
 ## Atendimento aos requisitos
 
