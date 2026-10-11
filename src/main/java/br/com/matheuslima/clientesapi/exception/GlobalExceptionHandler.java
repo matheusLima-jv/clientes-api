@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -73,6 +74,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ex.getCause() instanceof ConstraintViolationException violacao
                 && violacao.getConstraintName() != null
                 && violacao.getConstraintName().toLowerCase().contains(Cliente.UK_CPF);
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ProblemDetail handleErroInesperado(Exception ex) {
+        logger.error("Erro inesperado ao processar a requisição", ex);
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ocorreu um erro inesperado. Tente novamente mais tarde.");
+        problem.setTitle("Erro interno");
+        return problem;
     }
 
 }
