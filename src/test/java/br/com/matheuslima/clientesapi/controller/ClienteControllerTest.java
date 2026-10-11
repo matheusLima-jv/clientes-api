@@ -3,6 +3,8 @@ package br.com.matheuslima.clientesapi.controller;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
 import br.com.matheuslima.clientesapi.dto.ClienteResponse;
 import br.com.matheuslima.clientesapi.dto.PaginaResponse;
+import br.com.matheuslima.clientesapi.exception.ClienteNaoEncontradoException;
+import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.service.ClienteService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,14 +21,11 @@ import java.util.List;
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ClienteController.class)
 class ClienteControllerTest {
@@ -86,5 +85,48 @@ class ClienteControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(service).remover(1L);
+    }
+
+    @Test
+    @DisplayName("POST com dados inválidos deve retornar 400 com erros por campo")
+    void deveRejeitarDadosInvalidos() throws Exception {
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Ma", "email": "invalido", "cpf": "123"}
+                            """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Dados inválidos"))
+                .andExpect(jsonPath("$.erros.nome").exists())
+                .andExpect(jsonPath("$.erros.email").exists())
+                .andExpect(jsonPath("$.erros.cpf").exists());
+
+        verify(service, never()).criar(any());
+    }
+
+    @Test
+    @DisplayName("GET de cliente inexistente deve retornar 404 em ProblemDetail")
+    void deveRetornar404() throws Exception {
+        when(service.buscarPorId(99L)).thenThrow(new ClienteNaoEncontradoException(99L));
+
+        mockMvc.perform(get("/api/v1/clientes/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Cliente não encontrado"))
+                .andExpect(jsonPath("$.detail").value("Cliente com id 99 não encontrado"));
+    }
+
+    @Test
+    @DisplayName("POST com CPF duplicado deve retornar 409")
+    void deveRetornar409() throws Exception {
+        when(service.criar(any(ClienteRequest.class))).thenThrow(new CpfDuplicadoException());
+
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria Silva", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("CPF já cadastrado"));
     }
 }
