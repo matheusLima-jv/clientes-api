@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -129,4 +130,20 @@ class ClienteControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("CPF já cadastrado"));
     }
+
+    @Test
+    @DisplayName("POST deve retornar 409 quando o banco rejeitar CPF duplicado")
+    void deveRetornar409QuandoBancoRejeitarCpf() throws Exception {
+        when(service.criar(any(ClienteRequest.class)))
+                .thenThrow(new DataIntegrityViolationException("unique constraint"));
+
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria Silva", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("CPF já cadastrado"));
+    }
+
 }
