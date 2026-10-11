@@ -21,7 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.SQLException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.hamcrest.Matchers.endsWith;
@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ClienteControllerTest {
 
     private static final ClienteResponse MARIA = new ClienteResponse(
-            1L, "Maria Silva", "maria@email.com", "52998224725", LocalDateTime.of(2026, 10, 10, 9, 0));
+            1L, "Maria Silva", "maria@email.com", "52998224725", Instant.parse("2026-10-10T12:00:00Z"));
 
     private static final PaginaResponse<ClienteResponse> PAGINA_VAZIA = new PaginaResponse<>(List.of(), 0, 10, 0, 0);
 
@@ -73,7 +73,8 @@ class ClienteControllerTest {
 
         mockMvc.perform(get("/api/v1/clientes/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("maria@email.com"));
+                .andExpect(jsonPath("$.email").value("maria@email.com"))
+                .andExpect(jsonPath("$.dataCadastro").value("2026-10-10T12:00:00Z"));
     }
 
     @Test

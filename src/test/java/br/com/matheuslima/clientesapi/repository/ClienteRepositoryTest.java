@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,7 +44,7 @@ public class ClienteRepositoryTest {
     }
 
     private Cliente novoCliente(String email) {
-        return new Cliente("Maria Silva", email, CPF, LocalDateTime.of(2026, 10, 10, 9, 0));
+        return new Cliente("Maria Silva", email, CPF, Instant.parse("2026-10-10T12:00:00Z"));
     }
 
 }

@@ -17,7 +17,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +29,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
 
-    private static final Instant AGORA = Instant.parse("2026-10-10T12:00:00Z");
+    private static final Instant AGORA = Instant.parse("2026-10-10T12:00:00.123456789Z");
     private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
     private static final String CPF = "52998224725";
 
@@ -45,7 +44,7 @@ class ClienteServiceTest {
     }
 
     @Test
-    @DisplayName("deve criar cliente com data de cadastro gerada pelo servidor")
+    @DisplayName("deve criar cliente com data de cadastro em UTC truncada em segundos")
     void deveCriarCliente() {
         var request = new ClienteRequest("Maria Silva", "maria@email.com", CPF);
         when(repository.save(any(Cliente.class))).thenAnswer(invocation -> {
@@ -59,7 +58,7 @@ class ClienteServiceTest {
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.nome()).isEqualTo("Maria Silva");
         assertThat(response.cpf()).isEqualTo(CPF);
-        assertThat(response.dataCadastro()).isEqualTo(LocalDateTime.of(2026, 10, 10, 9, 0));
+        assertThat(response.dataCadastro()).isEqualTo(Instant.parse("2026-10-10T12:00:00Z"));
     }
 
     @Test
@@ -75,7 +74,7 @@ class ClienteServiceTest {
     }
 
     private Cliente clienteSalvo(Long id) {
-        var cliente = new Cliente("Maria Silva", "maria@email.com", CPF, LocalDateTime.of(2026, 10, 10, 9, 0));
+        var cliente = new Cliente("Maria Silva", "maria@email.com", CPF, AGORA);
         ReflectionTestUtils.setField(cliente, "id", id);
         return cliente;
     }
