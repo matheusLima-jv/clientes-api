@@ -98,4 +98,24 @@ class ClienteServiceTest {
                 .hasMessageContaining("99");
     }
 
+    @Test
+    @DisplayName("deve remover cliente existente")
+    void deveRemoverCliente() {
+        when(repository.existsById(1L)).thenReturn(true);
+
+        service.remover(1L);
+
+        verify(repository).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("deve lançar exceção ao remover cliente inexistente")
+    void deveFalharAoRemoverInexistente() {
+        when(repository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.remover(99L))
+                .isInstanceOf(ClienteNaoEncontradoException.class);
+        verify(repository, never()).deleteById(anyLong());
+    }
+
 }

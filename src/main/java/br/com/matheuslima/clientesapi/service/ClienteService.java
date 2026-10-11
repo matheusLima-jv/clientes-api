@@ -38,4 +38,6 @@ public class ClienteService {
                 .map(ClienteResponse::from)
                 .orElseThrow(() -> new ClienteNaoEncontradoException(id));
     }
+
+    public void remover(Long id) { throw new UnsupportedOperationException("não implementado"); }
 }
