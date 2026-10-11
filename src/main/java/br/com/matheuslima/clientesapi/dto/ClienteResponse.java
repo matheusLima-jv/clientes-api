@@ -3,7 +3,7 @@ package br.com.matheuslima.clientesapi.dto;
 import br.com.matheuslima.clientesapi.domain.Cliente;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Schema(description = "Dados de um cliente cadastrado")
 public record ClienteResponse(
@@ -19,8 +19,8 @@ public record ClienteResponse(
         @Schema(description = "CPF com 11 dígitos, sem pontuação", example = "52998224725")
         String cpf,
 
-        @Schema(description = "Data e hora do cadastro, gerada pelo servidor", example = "2026-10-10T09:00:00")
-        LocalDateTime dataCadastro
+        @Schema(description = "Data e hora do cadastro em UTC, gerada pelo servidor", example = "2026-10-10T12:00:00Z")
+        Instant dataCadastro
 ) {
 
     public static ClienteResponse from(Cliente cliente) {

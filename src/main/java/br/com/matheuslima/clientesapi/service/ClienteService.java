@@ -12,7 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class ClienteService {
@@ -30,7 +31,8 @@ public class ClienteService {
         if (repository.existsByCpf(request.cpf())) {
             throw new CpfDuplicadoException();
         }
-        var cliente = new Cliente(request.nome(), request.email(), request.cpf(), LocalDateTime.now(clock));
+        var dataCadastro = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS);
+        var cliente = new Cliente(request.nome(), request.email(), request.cpf(), dataCadastro);
         return ClienteResponse.from(repository.save(cliente));
     }
 

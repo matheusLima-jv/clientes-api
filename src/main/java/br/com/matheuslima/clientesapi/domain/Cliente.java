@@ -8,7 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "clientes", uniqueConstraints = @UniqueConstraint(name = Cliente.UK_CPF, columnNames = "cpf"))
@@ -30,13 +30,13 @@ public class Cliente {
     private String cpf;
 
     @Column(name = "data_cadastro", nullable = false, updatable = false)
-    private LocalDateTime dataCadastro;
+    private Instant dataCadastro;
 
     protected Cliente() {
 
     }
 
-    public Cliente(String nome, String email, String cpf, LocalDateTime dataCadastro) {
+    public Cliente(String nome, String email, String cpf, Instant dataCadastro) {
         this.nome = nome;
         this.email = email;
         this.cpf = cpf;
@@ -59,7 +59,7 @@ public class Cliente {
         return cpf;
     }
 
-    public LocalDateTime getDataCadastro() {
+    public Instant getDataCadastro() {
         return dataCadastro;
     }
 }
