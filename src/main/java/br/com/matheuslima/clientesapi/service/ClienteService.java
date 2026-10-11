@@ -39,5 +39,12 @@ public class ClienteService {
                 .orElseThrow(() -> new ClienteNaoEncontradoException(id));
     }
 
-    public void remover(Long id) { throw new UnsupportedOperationException("não implementado"); }
+    @Transactional
+    public void remover(Long id) {
+        if (!repository.existsById(id)) {
+            throw new ClienteNaoEncontradoException(id);
+        }
+        repository.deleteById(id);
+    }
+
 }
