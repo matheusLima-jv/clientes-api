@@ -3,9 +3,11 @@ package br.com.matheuslima.clientesapi.service;
 import br.com.matheuslima.clientesapi.domain.Cliente;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
 import br.com.matheuslima.clientesapi.dto.ClienteResponse;
+import br.com.matheuslima.clientesapi.dto.PaginaResponse;
 import br.com.matheuslima.clientesapi.exception.ClienteNaoEncontradoException;
 import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.repository.ClienteRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -47,4 +49,8 @@ public class ClienteService {
         repository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    public PaginaResponse<ClienteResponse> listar(Pageable pageable) {
+        throw new UnsupportedOperationException("a implementar");
+    }
 }

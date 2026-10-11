@@ -11,12 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,6 +119,21 @@ class ClienteServiceTest {
         assertThatThrownBy(() -> service.remover(99L))
                 .isInstanceOf(ClienteNaoEncontradoException.class);
         verify(repository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    @DisplayName("deve listar clientes paginados")
+    void deveListarPaginado() {
+        var pageable = PageRequest.of(0, 10);
+        when(repository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(clienteSalvo(1L)), pageable, 1));
+
+        var pagina = service.listar(pageable);
+
+        assertThat(pagina.conteudo()).hasSize(1);
+        assertThat(pagina.pagina()).isZero();
+        assertThat(pagina.tamanho()).isEqualTo(10);
+        assertThat(pagina.totalElementos()).isEqualTo(1);
+        assertThat(pagina.totalPaginas()).isEqualTo(1);
     }
 
 }
