@@ -51,6 +51,6 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public PaginaResponse<ClienteResponse> listar(Pageable pageable) {
-        throw new UnsupportedOperationException("a implementar");
+        return PaginaResponse.from(repository.findAll(pageable).map(ClienteResponse::from));
     }
 }
