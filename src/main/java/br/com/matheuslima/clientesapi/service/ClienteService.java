@@ -30,4 +30,8 @@ public class ClienteService {
         var cliente = new Cliente(request.nome(), request.email(), request.cpf(), LocalDateTime.now(clock));
         return ClienteResponse.from(repository.save(cliente));
     }
+
+    public ClienteResponse buscarPorId(Long id) {
+        throw new UnsupportedOperationException("não implementado");
+    }
 }

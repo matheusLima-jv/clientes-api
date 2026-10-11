@@ -2,6 +2,7 @@ package br.com.matheuslima.clientesapi.service;
 
 import br.com.matheuslima.clientesapi.domain.Cliente;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
+import br.com.matheuslima.clientesapi.exception.ClienteNaoEncontradoException;
 import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.repository.ClienteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -68,4 +70,32 @@ class ClienteServiceTest {
                 .hasMessage("CPF já cadastrado");
         verify(repository, never()).save(any());
     }
+
+    private Cliente clienteSalvo(Long id) {
+        var cliente = new Cliente("Maria Silva", "maria@email.com", CPF, LocalDateTime.of(2026, 10, 10, 9, 0));
+        ReflectionTestUtils.setField(cliente, "id", id);
+        return cliente;
+    }
+
+    @Test
+    @DisplayName("deve buscar cliente existente por id")
+    void deveBuscarPorId() {
+        when(repository.findById(1L)).thenReturn(Optional.of(clienteSalvo(1L)));
+
+        var response = service.buscarPorId(1L);
+
+        assertThat(response.id()).isEqualTo(1L);
+        assertThat(response.email()).isEqualTo("maria@email.com");
+    }
+
+    @Test
+    @DisplayName("deve lançar exceção ao buscar cliente inexistente")
+    void deveFalharAoBuscarInexistente() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buscarPorId(99L))
+                .isInstanceOf(ClienteNaoEncontradoException.class)
+                .hasMessageContaining("99");
+    }
+
 }
