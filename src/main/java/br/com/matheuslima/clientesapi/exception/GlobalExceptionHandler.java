@@ -1,5 +1,6 @@
 package br.com.matheuslima.clientesapi.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -49,6 +50,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Dados inválidos");
         problem.setProperty("erros", erros);
         return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    // segurança contra race condition duas requisições simultâneas podem passar
+    // pelo existsByCpf ao mesmo tempo; a constraint unique do banco barra a segunda
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleViolacaoDeIntegridade(DataIntegrityViolationException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "CPF já cadastrado");
+        problem.setTitle("CPF duplicado");
+        return problem;
     }
 
 }
