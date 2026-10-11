@@ -42,6 +42,16 @@ class ClienteRepositoryTest {
                         ex -> assertThat(ex.getConstraintName()).containsIgnoringCase("uk_clientes_cpf"));
     }
 
+    @Test
+    @DisplayName("deve remover por id informando quantos clientes foram removidos")
+    void deveRemoverPorId() {
+        var id = repository.saveAndFlush(novoCliente("maria@email.com")).getId();
+
+        assertThat(repository.removerPorId(id)).isEqualTo(1);
+        assertThat(repository.removerPorId(id)).isZero();
+        assertThat(repository.existsById(id)).isFalse();
+    }
+
     private Cliente novoCliente(String email) {
         return new Cliente("Maria Silva", email, CPF, Instant.parse("2026-10-10T12:00:00Z"));
     }

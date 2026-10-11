@@ -97,21 +97,20 @@ class ClienteServiceTest {
     @Test
     @DisplayName("deve remover cliente existente")
     void deveRemoverCliente() {
-        when(repository.existsById(1L)).thenReturn(true);
+        when(repository.removerPorId(1L)).thenReturn(1);
 
         service.remover(1L);
 
-        verify(repository).deleteById(1L);
+        verify(repository).removerPorId(1L);
     }
 
     @Test
     @DisplayName("deve lançar exceção ao remover cliente inexistente")
     void deveFalharAoRemoverInexistente() {
-        when(repository.existsById(99L)).thenReturn(false);
+        when(repository.removerPorId(99L)).thenReturn(0);
 
         assertThatThrownBy(() -> service.remover(99L))
                 .isInstanceOf(ClienteNaoEncontradoException.class);
-        verify(repository, never()).deleteById(anyLong());
     }
 
     @Test
