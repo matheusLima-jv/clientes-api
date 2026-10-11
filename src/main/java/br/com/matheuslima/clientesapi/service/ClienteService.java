@@ -3,6 +3,7 @@ package br.com.matheuslima.clientesapi.service;
 import br.com.matheuslima.clientesapi.domain.Cliente;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
 import br.com.matheuslima.clientesapi.dto.ClienteResponse;
+import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.repository.ClienteRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,9 @@ public class ClienteService {
 
     @Transactional
     public ClienteResponse criar(ClienteRequest request) {
+        if (repository.existsByCpf(request.cpf())) {
+            throw new CpfDuplicadoException();
+        }
         var cliente = new Cliente(request.nome(), request.email(), request.cpf(), LocalDateTime.now(clock));
         return ClienteResponse.from(repository.save(cliente));
     }
