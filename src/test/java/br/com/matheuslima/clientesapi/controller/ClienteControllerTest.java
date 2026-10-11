@@ -6,6 +6,7 @@ import br.com.matheuslima.clientesapi.dto.PaginaResponse;
 import br.com.matheuslima.clientesapi.exception.ClienteNaoEncontradoException;
 import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.service.ClienteService;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,10 +20,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
@@ -181,7 +184,7 @@ class ClienteControllerTest {
     @DisplayName("POST deve retornar 409 quando o banco rejeitar CPF duplicado")
     void deveRetornar409QuandoBancoRejeitarCpf() throws Exception {
         when(service.criar(any(ClienteRequest.class)))
-                .thenThrow(new DataIntegrityViolationException("unique constraint"));
+                .thenThrow(violacaoDeIntegridade("PUBLIC.UK_CLIENTES_CPF_INDEX_6"));
 
         mockMvc.perform(post("/api/v1/clientes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -190,6 +193,43 @@ class ClienteControllerTest {
                             """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value("CPF já cadastrado"));
+    }
+
+    @Test
+    @DisplayName("POST não deve tratar outra violação de integridade como CPF duplicado")
+    void naoDeveTratarOutraViolacaoComoCpfDuplicado() throws Exception {
+        when(service.criar(any(ClienteRequest.class)))
+                .thenThrow(violacaoDeIntegridade("PUBLIC.OUTRA_CONSTRAINT"));
+
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria Silva", "email": "maria@email.com", "cpf": "52998224725"}
+                            """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Conflito de dados"))
+                .andExpect(jsonPath("$.detail").value(not("CPF já cadastrado")));
+    }
+
+    @Test
+    @DisplayName("POST com e-mail acima de 255 caracteres deve retornar 400")
+    void deveRejeitarEmailLongo() throws Exception {
+        var email = "a".repeat(64) + "@" + ("b".repeat(60) + ".").repeat(4) + "com";
+
+        mockMvc.perform(post("/api/v1/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"nome": "Maria Silva", "email": "%s", "cpf": "52998224725"}
+                            """.formatted(email)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros.email").exists());
+
+        verify(service, never()).criar(any());
+    }
+
+    private static DataIntegrityViolationException violacaoDeIntegridade(String constraint) {
+        return new DataIntegrityViolationException("violação de integridade",
+                new ConstraintViolationException("violação de integridade", new SQLException(), constraint));
     }
 
 }

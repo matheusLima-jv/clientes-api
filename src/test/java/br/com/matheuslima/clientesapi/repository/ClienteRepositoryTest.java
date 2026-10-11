@@ -1,6 +1,7 @@
 package br.com.matheuslima.clientesapi.repository;
 
 import br.com.matheuslima.clientesapi.domain.Cliente;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,10 @@ public class ClienteRepositoryTest {
         repository.saveAndFlush(novoCliente("maria@email.com"));
 
         assertThatThrownBy(() -> repository.saveAndFlush(novoCliente("outra@email.com")))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .cause()
+                .isInstanceOfSatisfying(ConstraintViolationException.class,
+                        ex -> assertThat(ex.getConstraintName()).containsIgnoringCase("uk_clientes_cpf"));
     }
 
     private Cliente novoCliente(String email) {
