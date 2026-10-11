@@ -45,10 +45,9 @@ public class ClienteService {
 
     @Transactional
     public void remover(Long id) {
-        if (!repository.existsById(id)) {
+        if (repository.removerPorId(id) == 0) {
             throw new ClienteNaoEncontradoException(id);
         }
-        repository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
