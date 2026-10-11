@@ -2,6 +2,7 @@ package br.com.matheuslima.clientesapi.service;
 
 import br.com.matheuslima.clientesapi.domain.Cliente;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
+import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.repository.ClienteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,8 +18,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
@@ -53,5 +55,17 @@ class ClienteServiceTest {
         assertThat(response.nome()).isEqualTo("Maria Silva");
         assertThat(response.cpf()).isEqualTo(CPF);
         assertThat(response.dataCadastro()).isEqualTo(LocalDateTime.of(2026, 10, 10, 9, 0));
+    }
+
+    @Test
+    @DisplayName("deve lançar exceção quando CPF já estiver cadastrado")
+    void deveRejeitarCpfDuplicado() {
+        var request = new ClienteRequest("Maria Silva", "maria@email.com", CPF);
+        when(repository.existsByCpf(CPF)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.criar(request))
+                .isInstanceOf(CpfDuplicadoException.class)
+                .hasMessage("CPF já cadastrado");
+        verify(repository, never()).save(any());
     }
 }
