@@ -10,7 +10,9 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,21 +22,25 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ClienteController.class)
@@ -293,6 +299,44 @@ class ClienteControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("Erro interno"))
                 .andExpect(jsonPath("$.detail").value("Ocorreu um erro inesperado. Tente novamente mais tarde."));
+    }
+
+    static Stream<Arguments> errosTratadosPeloSpring() {
+        return Stream.of(
+                Arguments.of(post("/api/v1/clientes").contentType(MediaType.APPLICATION_JSON).content("{\"nome\":"),
+                        400, "Requisição inválida", "O corpo da requisição está ausente ou malformado"),
+                Arguments.of(get("/api/v1/clientes/abc"),
+                        400, "Requisição inválida", "Valor 'abc' inválido para o parâmetro 'id'"),
+                Arguments.of(get("/api/v1/inexistente"),
+                        404, "Recurso não encontrado", "O recurso solicitado não existe"),
+                Arguments.of(put("/api/v1/clientes/1"),
+                        405, "Método não permitido", "O método 'PUT' não é suportado neste recurso"),
+                Arguments.of(post("/api/v1/clientes").contentType(MediaType.TEXT_PLAIN).content("x"),
+                        415, "Tipo de conteúdo não suportado", "O Content-Type 'text/plain;charset=UTF-8' não é suportado")
+        );
+    }
+
+    @ParameterizedTest(name = "{1} {2}")
+    @MethodSource("errosTratadosPeloSpring")
+    @DisplayName("erros tratados pelo Spring devem ter título e detalhe em português")
+    void deveRetornarErrosDoSpringEmPortugues(MockHttpServletRequestBuilder requisicao, int statusEsperado,
+                                             String titulo, String detalhe) throws Exception {
+        mockMvc.perform(requisicao)
+                .andExpect(status().is(statusEsperado))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value(titulo))
+                .andExpect(jsonPath("$.detail").value(detalhe));
+    }
+
+    @Test
+    @DisplayName("GET com formato de resposta não suportado deve retornar 406 em português")
+    void deveRetornar406EmPortugues() throws Exception {
+        when(service.buscarPorId(1L)).thenReturn(MARIA);
+
+        mockMvc.perform(get("/api/v1/clientes/1").accept(MediaType.APPLICATION_XML))
+                .andExpect(status().isNotAcceptable())
+                .andExpect(jsonPath("$.title").value("Formato de resposta não suportado"))
+                .andExpect(jsonPath("$.detail").value(startsWith("Formatos de resposta disponíveis:")));
     }
 
     @Test
