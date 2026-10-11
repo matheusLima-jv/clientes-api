@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -71,12 +71,6 @@ class ClienteServiceTest {
                 .isInstanceOf(CpfDuplicadoException.class)
                 .hasMessage("CPF já cadastrado");
         verify(repository, never()).save(any());
-    }
-
-    private Cliente clienteSalvo(Long id) {
-        var cliente = new Cliente("Maria Silva", "maria@email.com", CPF, AGORA);
-        ReflectionTestUtils.setField(cliente, "id", id);
-        return cliente;
     }
 
     @Test
@@ -133,6 +127,12 @@ class ClienteServiceTest {
         assertThat(pagina.tamanho()).isEqualTo(10);
         assertThat(pagina.totalElementos()).isEqualTo(1);
         assertThat(pagina.totalPaginas()).isEqualTo(1);
+    }
+
+    private Cliente clienteSalvo(Long id) {
+        var cliente = new Cliente("Maria Silva", "maria@email.com", CPF, AGORA);
+        ReflectionTestUtils.setField(cliente, "id", id);
+        return cliente;
     }
 
 }

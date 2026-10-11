@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-
     @ExceptionHandler(ClienteNaoEncontradoException.class)
     public ProblemDetail handleClienteNaoEncontrado(ClienteNaoEncontradoException ex) {
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());

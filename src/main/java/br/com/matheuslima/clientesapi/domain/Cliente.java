@@ -33,7 +33,6 @@ public class Cliente {
     private Instant dataCadastro;
 
     protected Cliente() {
-
     }
 
     public Cliente(String nome, String email, String cpf, Instant dataCadastro) {

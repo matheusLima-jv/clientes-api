@@ -8,8 +8,8 @@ import br.com.matheuslima.clientesapi.exception.ClienteNaoEncontradoException;
 import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.repository.ClienteRepository;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;

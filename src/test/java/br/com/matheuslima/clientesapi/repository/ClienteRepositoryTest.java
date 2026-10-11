@@ -13,9 +13,8 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-
 @DataJpaTest
-public class ClienteRepositoryTest {
+class ClienteRepositoryTest {
 
     private static final String CPF = "52998224725";
 
