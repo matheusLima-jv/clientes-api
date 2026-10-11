@@ -13,12 +13,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  data:
-    web:
-      pageable:
-        page-parameter: pagina
-        size-parameter: tamanho
-        max-page-size: 50
 
 springdoc:
   default-produces-media-type: application/json

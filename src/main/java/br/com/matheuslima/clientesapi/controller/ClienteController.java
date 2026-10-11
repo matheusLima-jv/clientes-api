@@ -3,10 +3,9 @@ package br.com.matheuslima.clientesapi.controller;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
 import br.com.matheuslima.clientesapi.dto.ClienteResponse;
 import br.com.matheuslima.clientesapi.dto.PaginaResponse;
+import br.com.matheuslima.clientesapi.dto.PaginacaoRequest;
 import br.com.matheuslima.clientesapi.service.ClienteService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,8 +47,8 @@ public class ClienteController implements ClienteApi {
 
     @Override
     @GetMapping
-    public PaginaResponse<ClienteResponse> listar(@PageableDefault(size = 10, sort = "id") Pageable pageable) {
-        return service.listar(pageable);
+    public PaginaResponse<ClienteResponse> listar(@Valid PaginacaoRequest paginacao) {
+        return service.listar(paginacao.toPageable());
     }
 
     @Override

@@ -43,7 +43,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, String> erros = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        erro -> Objects.requireNonNullElse(erro.getDefaultMessage(), "valor inválido"),
+                        // falha de conversão (ex.: pagina=abc) traz mensagem técnica do Spring; não expõe ao cliente
+                        erro -> erro.isBindingFailure()
+                                ? "valor em formato inválido"
+                                : Objects.requireNonNullElse(erro.getDefaultMessage(), "valor inválido"),
                         (primeiro, segundo) -> primeiro));
 
         var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Um ou mais campos são inválidos");

@@ -3,10 +3,9 @@ package br.com.matheuslima.clientesapi.controller;
 import br.com.matheuslima.clientesapi.dto.ClienteRequest;
 import br.com.matheuslima.clientesapi.dto.ClienteResponse;
 import br.com.matheuslima.clientesapi.dto.PaginaResponse;
+import br.com.matheuslima.clientesapi.dto.PaginacaoRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -14,7 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Pageable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
@@ -31,7 +30,7 @@ public interface ClienteApi {
               "detail": "Um ou mais campos são inválidos",
               "instance": "/api/v1/clientes",
               "erros": {
-                "nome": "o tamanho deve ser entre 3 e 100",
+                "nome": "tamanho deve ser entre 3 e 100",
                 "email": "deve ser um endereço de e-mail bem formado",
                 "cpf": "deve conter exatamente 11 dígitos numéricos"
               }
@@ -45,6 +44,19 @@ public interface ClienteApi {
               "status": 400,
               "detail": "Failed to convert 'id' with value: 'abc'",
               "instance": "/api/v1/clientes/abc"
+            }
+            """;
+
+    String EXEMPLO_400_PAGINACAO = """
+            {
+              "type": "about:blank",
+              "title": "Dados inválidos",
+              "status": 400,
+              "detail": "Um ou mais campos são inválidos",
+              "instance": "/api/v1/clientes",
+              "erros": {
+                "tamanho": "deve ser menor que ou igual à 50"
+              }
             }
             """;
 
@@ -102,14 +114,14 @@ public interface ClienteApi {
 
     @Operation(summary = "Lista clientes de forma paginada",
             description = "Retorna os clientes ordenados por id.")
-    @Parameters({
-            @Parameter(name = "pagina", in = ParameterIn.QUERY, description = "Número da página, começando em 0",
-                    schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
-            @Parameter(name = "tamanho", in = ParameterIn.QUERY, description = "Quantidade de clientes por página",
-                    schema = @Schema(type = "integer", minimum = "1", maximum = "50", defaultValue = "10"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de clientes"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de paginação inválidos",
+                    content = @Content(mediaType = PROBLEM_JSON,
+                            schema = @Schema(implementation = ProblemDetail.class),
+                            examples = @ExampleObject(value = EXEMPLO_400_PAGINACAO)))
     })
-    @ApiResponse(responseCode = "200", description = "Página de clientes")
-    PaginaResponse<ClienteResponse> listar(@Parameter(hidden = true) Pageable pageable);
+    PaginaResponse<ClienteResponse> listar(@ParameterObject PaginacaoRequest paginacao);
 
     @Operation(summary = "Remove um cliente")
     @ApiResponses({
