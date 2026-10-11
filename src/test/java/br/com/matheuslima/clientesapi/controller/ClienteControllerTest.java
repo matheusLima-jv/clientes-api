@@ -8,10 +8,13 @@ import br.com.matheuslima.clientesapi.exception.CpfDuplicadoException;
 import br.com.matheuslima.clientesapi.service.ClienteService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,6 +36,8 @@ class ClienteControllerTest {
 
     private static final ClienteResponse MARIA = new ClienteResponse(
             1L, "Maria Silva", "maria@email.com", "52998224725", LocalDateTime.of(2026, 10, 10, 9, 0));
+
+    private static final PaginaResponse<ClienteResponse> PAGINA_VAZIA = new PaginaResponse<>(List.of(), 0, 10, 0, 0);
 
     @Autowired
     private MockMvc mockMvc;
@@ -77,6 +82,47 @@ class ClienteControllerTest {
                 .andExpect(jsonPath("$.pagina").value(2));
 
         verify(service).listar(argThat((Pageable p) -> p.getPageNumber() == 2 && p.getPageSize() == 5));
+    }
+
+    @Test
+    @DisplayName("GET sem parâmetros deve usar página 0 e tamanho 10")
+    void deveUsarPaginacaoPadrao() throws Exception {
+        when(service.listar(any(Pageable.class))).thenReturn(PAGINA_VAZIA);
+
+        mockMvc.perform(get("/api/v1/clientes"))
+                .andExpect(status().isOk());
+
+        verify(service).listar(argThat((Pageable p) -> p.getPageNumber() == 0 && p.getPageSize() == 10));
+    }
+
+    @Test
+    @DisplayName("GET deve ordenar por id e ignorar ordenação informada pelo cliente")
+    void deveIgnorarOrdenacaoDoCliente() throws Exception {
+        when(service.listar(any(Pageable.class))).thenReturn(PAGINA_VAZIA);
+
+        mockMvc.perform(get("/api/v1/clientes").param("sort", "inexistente"))
+                .andExpect(status().isOk());
+
+        verify(service).listar(argThat((Pageable p) -> p.getSort().equals(Sort.by("id"))));
+    }
+
+    @ParameterizedTest(name = "pagina={0}, tamanho={1}")
+    @CsvSource({
+            "-1, 10, pagina",
+            "abc, 10, pagina",
+            "2147483647, 10, pagina",
+            "0, 0, tamanho",
+            "0, 51, tamanho"
+    })
+    @DisplayName("GET com paginação fora dos limites deve retornar 400 com erro no parâmetro")
+    void deveRejeitarPaginacaoInvalida(String pagina, String tamanho, String parametro) throws Exception {
+        mockMvc.perform(get("/api/v1/clientes").param("pagina", pagina).param("tamanho", tamanho))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Dados inválidos"))
+                .andExpect(jsonPath("$.erros." + parametro).exists());
+
+        verify(service, never()).listar(any());
     }
 
     @Test
