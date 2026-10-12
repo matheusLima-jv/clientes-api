@@ -1,5 +1,7 @@
 # Clientes API
 
+[![CI](https://github.com/matheusLima-jv/clientes-api/actions/workflows/ci.yml/badge.svg)](https://github.com/matheusLima-jv/clientes-api/actions/workflows/ci.yml)
+
 API REST para cadastro, consulta, listagem paginada e remoção de clientes, construída com Java 17, Spring Boot 3 e Maven.
 
 O projeto segue uma arquitetura em camadas (Controller → Service → Repository), valida as entradas com Bean Validation, padroniza todas as respostas de erro no formato Problem Details (RFC 9457) e garante a unicidade do CPF tanto na regra de negócio quanto no banco de dados.
